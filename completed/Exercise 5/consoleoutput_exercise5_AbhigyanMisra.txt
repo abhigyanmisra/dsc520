@@ -1,0 +1,105 @@
+> # Assignment: ASSIGNMENT Exercise 5
+> # Name: Misra, Abhigyan
+> # Date: 2020-09-14
+> 
+> ## Check your current working directory using `getwd()`
+> getwd()
+[1] "C:/git-bellevue/dsc520-fork"
+> 
+> ## List the contents of the working directory with the `dir()` function
+> dir()
+[1] "assignments"  "completed"    "data"         "LICENSE"      "README.md"   
+[6] "RMarkdown.md"
+> 
+> ## If the current directory does not contain the `data` directory, set the
+> ## working directory to project root folder (the folder should contain the `data` directory
+> ## Use `setwd()` if needed
+> setwd("C:/git-bellevue/dsc520-fork")
+> 
+> ## Read the file `data/acs-14-1yr-s0201.csv` to `community_df`
+> ## Display summary statistics using the `summary()` function
+> community_df <- read.csv(file='data/acs-14-1yr-s0201.csv', header = TRUE, stringsAsFactors = TRUE)
+> 
+> str(community_df) 
+'data.frame':	136 obs. of  8 variables:
+ $ Id                    : Factor w/ 136 levels "0500000US01073",..: 1 2 3 4 5 6 7 8 9 10 ...
+ $ Id2                   : int  1073 4013 4019 6001 6013 6019 6029 6037 6059 6065 ...
+ $ Geography             : Factor w/ 136 levels "Alameda County, California",..: 56 70 98 1 20 43 62 68 92 106 ...
+ $ PopGroupID            : int  1 1 1 1 1 1 1 1 1 1 ...
+ $ POPGROUP.display.label: Factor w/ 1 level "Total population": 1 1 1 1 1 1 1 1 1 1 ...
+ $ RacesReported         : int  660793 4087191 1004516 1610921 1111339 965974 874589 10116705 3145515 2329271 ...
+ $ HSDegree              : num  89.1 86.8 88 86.9 88.8 73.6 74.5 77.5 84.6 80.6 ...
+ $ BachDegree            : num  30.5 30.2 30.8 42.8 39.7 19.7 15.4 30.3 38 20.7 ...
+> nrow(community_df)
+[1] 136
+> ncol(community_df)
+[1] 8
+> 
+> ## Load the ggplot2 package
+> library(ggplot2)
+> theme_set(theme_minimal())
+> 
+> ## Create a histogram of the `HSDegree` variable using `geom_histogram()`
+> nOfBins <- 16
+> ggplot(community_df, aes(HSDegree))  + xlim(c(60,100)) +  geom_histogram(bins = nOfBins) + ggtitle('County with HSDegree') + xlab('% Age of Population with HSDegree') + ylab('Number of Counties')
+> 
+> ## Normal Curve
+> ggplot(community_df, aes(HSDegree)) + xlim(c(60,100)) + geom_histogram(aes(y = ..density..), bins=nOfBins, colour = "blue") + stat_function(fun = dnorm, args = list(mean = mean(community_df$HSDegree), sd = sd(community_df$HSDegree))) + ggtitle('Normal Curve with %Age of Population with HSDegree in counties') + xlab('% Age of Population with HSDegree')
+> 
+> ## Normal Distribution - to check Mean and Median
+> summary(community_df)
+              Id           Id2                                 Geography  
+ 0500000US01073:  1   Min.   : 1073   Alameda County, California    :  1  
+ 0500000US04013:  1   1st Qu.:12082   Allegheny County, Pennsylvania:  1  
+ 0500000US04019:  1   Median :26112   Anne Arundel County, Maryland :  1  
+ 0500000US06001:  1   Mean   :26833   Arapahoe County, Colorado     :  1  
+ 0500000US06013:  1   3rd Qu.:39123   Baltimore city, Maryland      :  1  
+ 0500000US06019:  1   Max.   :55079   Baltimore County, Maryland    :  1  
+ (Other)       :130                   (Other)                       :130  
+   PopGroupID      POPGROUP.display.label RacesReported         HSDegree    
+ Min.   :1    Total population:136        Min.   :  500292   Min.   :62.20  
+ 1st Qu.:1                                1st Qu.:  631380   1st Qu.:85.50  
+ Median :1                                Median :  832708   Median :88.70  
+ Mean   :1                                Mean   : 1144401   Mean   :87.63  
+ 3rd Qu.:1                                3rd Qu.: 1216862   3rd Qu.:90.75  
+ Max.   :1                                Max.   :10116705   Max.   :95.50  
+                                                                            
+   BachDegree   
+ Min.   :15.40  
+ 1st Qu.:29.65  
+ Median :34.10  
+ Mean   :35.46  
+ 3rd Qu.:42.08  
+ Max.   :60.30  
+                
+> 
+> ## Histogram with Normal Curve(Changing Density Scale to Number of Counties)
+> n_obs = sum(!is.na(community_df$HSDegree))
+> ggplot(community_df, aes(HSDegree)) + xlim(c(60,100)) + geom_histogram(bins = nOfBins)+ ggtitle('County with HSDegree') + xlab('% Age of Population with HSDegree') + ylab('Number of Counties') + stat_function(fun = function(x) dnorm(x, mean = mean(community_df$HSDegree), sd = sd(community_df$HSDegree)) * (40/nOfBins) * n_obs)
+> 
+> ## Density Plot
+> ggplot(community_df, aes(HSDegree)) + geom_density(aes(HSDegree), colour="blue") + xlim(c(60,100)) + ggtitle('County with HSDegree') + xlab('% Age of Population with HSDegree') + ylab('Density of Counties')
+> 
+> 
+> ## Probability Plot / QQ Plot & qqplot line
+> ggplot(community_df, aes(sample = HSDegree)) + geom_qq(col='blue') + geom_qq_line(col='red') + ggtitle("Probability - QQ Plot for HSDegree")
+> 
+> 
+> ## stat.desc() Function
+> library(pastecs)
+> stat.desc(cbind(community_df$HSDegree), basic = FALSE, norm = TRUE)
+                        V1
+median        8.870000e+01
+mean          8.763235e+01
+SE.mean       4.388598e-01
+CI.mean.0.95  8.679296e-01
+var           2.619332e+01
+std.dev       5.117941e+00
+coef.var      5.840241e-02
+skewness     -1.674767e+00
+skew.2SE     -4.030254e+00
+kurtosis      4.352856e+00
+kurt.2SE      5.273885e+00
+normtest.W    8.773635e-01
+normtest.p    3.193634e-09
+>
