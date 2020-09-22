@@ -3,9 +3,9 @@ title: "ASSIGNMENT 4"
 author: "Abhigyan Misra"
 date: '2010-09-21'
 output:
+  word_document: default
   html_document: default
   pdf_document: default
-  word_document: default
 bibliography: bibliography.bib
 ---
 
@@ -18,7 +18,7 @@ bibliography: bibliography.bib
 
 ## Images
 
-![Fig 1: All Cases (Log Plot)](plots/10-all-cases-log.png)
+![All Cases (Log Plot)](plots/10-all-cases-log.png)
 
 ## Add a Quote
 
@@ -119,7 +119,7 @@ characters_df <- data.frame(name, race, in_fellowship, ring_bearer, age)
 ## Knitr Table with Kable
 ```{r, echo=FALSE, include=TRUE}
 library(knitr)
-knitr::kable(characters_df, caption ='Table 1: One Ring to Rule Them All',  )
+knitr::kable(characters_df, caption ='One Ring to Rule Them All',  )
 
 ```
 
