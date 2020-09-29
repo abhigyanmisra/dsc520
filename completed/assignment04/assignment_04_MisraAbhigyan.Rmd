@@ -3,8 +3,8 @@ title: "ASSIGNMENT 4"
 author: "Abhigyan Misra"
 date: '2010-09-21'
 output:
-  word_document: default
   html_document: default
+  word_document: default
   pdf_document: default
 bibliography: bibliography.bib
 ---
