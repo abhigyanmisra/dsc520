@@ -1,0 +1,257 @@
+---
+title: "Exercise 12"
+author: "Abhigyan Misra"
+date: October 12th 2020
+output: 
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Housing Data
+
+Problem Statement : Work individually on this assignment. You are encouraged to collaborate on ideas and strategies pertinent to this assignment. Data for this assignment is focused on real estate transactions recorded from 1964 to 2016 and can be found in Week 6 Housing.xlsx. Using your skills in statistical correlation, multiple regression and R programming, you are interested in the following variables: Sale Price and several other possible predictors.
+
+Using your ‘clean’ data set from the previous week complete the following:  
+
+```{r echo=TRUE, include=TRUE}
+
+## Set the working directory to the root of your DSC 520 directory
+setwd("C:/git-bellevue/dsc520-fork")
+
+## Load the `readxl` library
+library(readxl)
+
+## Load the `completed/Exercise 12/week-6-housing.xlsx` to
+housing_df <- read_excel(path = 'completed/Exercise_12/week-6-housing.xlsx' , skip = 0, sheet = 'Sheet2')
+str(housing_df)
+```
+## a. Explain why you chose to remove data points from your ‘clean’ dataset.
+
+Removing all datasets which have Sales Warnings as they may tell if a sale was not correct or the price mentioned may be wrong. The warnings might be legitimate and not reflect the correct values. We may need more understanding on the Sales Warning codes, if we want to use those datasets. 
+```{r echo=TRUE, include=TRUE}
+summary(housing_df)
+cleaned_housing_df <- housing_df[(is.na(housing_df$sale_warning)),]
+
+```
+
+```{r echo=TRUE, include=TRUE}
+
+summary(cleaned_housing_df)
+
+```
+
+## b. Create two variables; one that will contain the variables Sale Price and Square Foot of Lot (same variables used from previous assignment on simple regression) and one that will contain Sale Price and several additional predictors of your choice. Explain the basis for your additional predictor selections.
+
+```{r echo=TRUE, include=TRUE}
+
+# This is Simple Linear Regression Model
+saleprice_slm <- lm(cleaned_housing_df$`Sale Price` ~ cleaned_housing_df$sq_ft_lot, cleaned_housing_df)
+
+print("Correlation of Sale Price and square_feet_total_living ")
+cor(cleaned_housing_df$`Sale Price`,cleaned_housing_df$square_feet_total_living)
+print("Correlation of Sale Price and bedrooms")
+cor(cleaned_housing_df$`Sale Price`,cleaned_housing_df$bedrooms)
+print("Correlation of Sale Price and bath_full_count")
+cor(cleaned_housing_df$`Sale Price`,cleaned_housing_df$bath_full_count)
+print("Correlation of Sale Price and bath_half_count")
+cor(cleaned_housing_df$`Sale Price`,cleaned_housing_df$bath_half_count)
+print("Correlation of Sale Price and bath_3qtr_count")
+cor(cleaned_housing_df$`Sale Price`,cleaned_housing_df$bath_3qtr_count)
+print("Correlation of Sale Price and year_built")
+cor(cleaned_housing_df$`Sale Price`,cleaned_housing_df$year_built)
+print("Correlation of Sale Price and year_renovated")
+cor(cleaned_housing_df$`Sale Price`,cleaned_housing_df$year_renovated)
+
+```
+Based on the Correlation between Sales price and other variables, I am picking the one's with correlation over 0.2 and feeding them into the model
+
+```{r echo=TRUE, include=TRUE}
+# This is Multiple Linear Regression Model
+saleprice_mlm <- lm(cleaned_housing_df$`Sale Price` ~ cleaned_housing_df$square_feet_total_living + cleaned_housing_df$bedrooms + cleaned_housing_df$bath_full_count + cleaned_housing_df$bath_half_count + cleaned_housing_df$year_built )
+
+```
+
+
+## c. Execute a summary() function on two variables defined in the previous step to compare the model results. What are the R2 and Adjusted R2 statistics? Explain what these results tell you about the overall model. Did the inclusion of the additional predictors help explain any large variations found in Sale Price?
+
+
+```{r echo=TRUE, include=TRUE}
+
+summary(saleprice_slm)
+
+summary(saleprice_mlm)
+
+
+```
+The R2 of model tells how successfully we are predicting the model. Higher the R2 value, means better the Correlation coefficient, which is square root of R2.
+So based on the values from two models, we may say that the first model which has value of 0.05799, which means square foot of the lot only contributes 5.8% to the sales price.
+However in the other model, other attributes together the R2 value is 0.5109 contribute approx 51% towards the sale price.
+
+The Adjusted R2 gives an idea how well our model generalizes, and ideally we expect a similar value or close to R2. And in both our models, this value is very minimal. This difference tells if the model was derived from the population rather than sample, it would account for (diffX100)% less variance in the outcome. For both of our models R2 and Adjusted R2 is very similar which indicates that cross-validity of the model is good.
+
+
+## d. Considering the parameters of the multiple regression model you have created. What are the standardized betas for each parameter and what do the values indicate?
+```{r echo=TRUE, include=TRUE}
+library(QuantPsyc)
+lm.beta(saleprice_mlm)
+
+```
+
+In general, it tells that if the specific attribute changes by one standard deviation, then the sales price(or outcome variable) increase by the Standardized Beta times(the value it displays) the standard deviation. If Beta is -ve, it means decreases by same factor of Standard Deviation.
+
+
+## e. Calculate the confidence intervals for the parameters in your model and explain what the results indicate.
+```{r echo=TRUE, include=TRUE}
+
+confint(saleprice_mlm)
+
+```
+From the confidence interval values here we can say that
+1. square_feet_total_living
+2. bedrooms
+3. bath_full_count
+4. bath_half_count
+
+are on the same side of Zero be it, 2.5 percentile value or 97.5 percentile. So these are fine.
+
+The gap between square_feet_total_living is tight, so seems its estimates using this are more likely representing the true population. However the bedrooms, bath_full_count and batch_half_count are less representatives.
+
+The last value that is year_built is crossing the zero from 2.5 percentile to 97.5 percentile, so this may be a bad attribute to predict.
+
+## f. Assess the improvement of the new model compared to your original model (simple regression model) by testing whether this change is significant by performing an analysis of variance.
+
+```{r echo=TRUE, include=TRUE}
+
+anova(saleprice_slm, saleprice_mlm)
+
+```
+
+The F(4,10562) = 2445.5 for p<0.001
+So the Fit of the model has significantly improved from the original model.
+
+
+## g. Perform casewise diagnostics to identify outliers and/or influential cases, storing each function's output in a dataframe assigned to a unique variable name.
+
+```{r echo=TRUE, include=TRUE}
+
+# Outliers
+cleaned_housing_df$residuals <- resid(saleprice_mlm)
+cleaned_housing_df$standardized.residuals <- rstandard(saleprice_mlm)
+cleaned_housing_df$rstudent <- rstudent(saleprice_mlm)
+
+# Influential Cases
+cleaned_housing_df$cooks.distance <- cooks.distance(saleprice_mlm)
+cleaned_housing_df$dfbeta <- dfbeta(saleprice_mlm)
+cleaned_housing_df$dffits <- dffits(saleprice_mlm)
+cleaned_housing_df$leverage <- hatvalues(saleprice_mlm)
+cleaned_housing_df$covariance.ratios <- covratio(saleprice_mlm)
+
+```
+
+
+## h. Calculate the standardized residuals using the appropriate command, specifying those that are +-2, storing the results of large residuals in a variable you create.
+
+```{r echo=TRUE, include=TRUE}
+cleaned_housing_df$large.residuals<-cleaned_housing_df$standardized.residuals > 2 | cleaned_housing_df$standardized.residuals< -2 
+
+```
+
+
+
+## i. Use the appropriate function to show the sum of large residuals.
+
+```{r echo=TRUE, include=TRUE}
+
+sum(cleaned_housing_df$large.residuals)
+
+```
+
+
+## j. Which specific variables have large residuals (only cases that evaluate as TRUE)?
+
+```{r echo=TRUE, include=TRUE}
+
+cleaned_housing_df[cleaned_housing_df$large.residuals, c("Sale Price", "square_feet_total_living", "bedrooms", "bath_full_count", "bath_half_count", "year_built")]
+
+
+```
+
+
+## k. Investigate further by calculating the leverage, cooks distance, and covariance rations. Comment on all cases that are problematics.
+
+```{r echo=TRUE, include=TRUE}
+
+cleaned_housing_df[cleaned_housing_df$large.residuals, c("cooks.distance", "leverage", "covariance.ratios")]
+
+```
+
+
+## l. Perform the necessary calculations to assess the assumption of independence and state if the condition is met or not.
+
+
+```{r echo=TRUE, include=TRUE}
+library(car)
+durbinWatsonTest(saleprice_mlm)
+
+```
+As per the Durbin Watson Test, if the values is in between 1-3, the model is considered good.
+Closer the value to 2, better the model.
+
+## m. Perform the necessary calculations to assess the assumption of no multicollinearity and state if the condition is met or not.
+
+```{r echo=TRUE, include=TRUE}
+vif(saleprice_mlm)
+
+
+print("Tolerance = 1/VIF")
+1/vif(saleprice_mlm)
+
+print("Mean VIF")
+mean(vif(saleprice_mlm))
+
+```
+Is Largest VIF > 10 ? NO - So no cause for concern
+Avg VIF is 1.54, which is not substantially greater than 1. (Substantially more is considered more than 2.5, as from https://statisticalhorizons.com/multicollinearity)
+All Tolerance are above 0.2, meaning it should be fine.(Less than 0.2 is potential problem, less than 0.1 is significant problem. Its same as VIF >10, as tolerance = 1/VIF)
+
+
+## n. Visually check the assumptions related to the residuals using the plot() and hist() functions. Summarize what each graph is informing you of and if any anomalies are present.
+
+```{r echo=TRUE, include=TRUE}
+
+plot(saleprice_mlm)
+
+```
+The Residuals Vs Fitted Graph shows random dots evenly dispersed around 0. Though not fully dispersed but evenly dispersed. It does not funnel out, so there is no heteroscedasticity.
+The data points also dont form a curve, so should be linear.
+
+With the QQ plot we see that the plot curves of at extremes, so it means has more extreme values than would be expected if they truly came from a Normal distribution.
+
+
+```{r echo=TRUE, include=TRUE}
+
+hist(cleaned_housing_df$rstudent)
+hist(rstudent(saleprice_mlm))
+
+```
+
+Looks like a Bell slight skewed towards right. Could be assumed Normal.
+
+
+## o. Overall, is this regression model unbiased? If an unbiased regression model, what does this tell us about the sample vs. the entire population model?
+
+As we see from the QQ plot that the plot curves away in opposite directions when approaching extreme values. This means there are outliers present at extremes. This tells that the model could be biased.
+
+Secondly, as we saw with year_built attribute the confint() output shows to affect the model in a bad way.
+
+So based on these two, we can say that we have bias present in this model.
+
+If the model is unbiased, it means that it holds true for both sample as well as it could be used confidently over the entire population.
+
+To make this model better
+1.    We should try to clean the outliers based on the analysis so far.
+2.    We should also try to re-look at the parameters being used in the model. The one's which have bad effect on the model, should be removed. Additional parameters should also be added, if needed to improve the model.
