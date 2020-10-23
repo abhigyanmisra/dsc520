@@ -1,0 +1,131 @@
+---
+title: "Exercise 13"
+author: "Abhigyan Misra"
+date: October 21st 2020
+output: 
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Fit a Logistic Regression Model to the Thoracic Surgery Binary Dataset
+
+Problem Statement : For this problem, you will be working with the thoracic surgery data set from the University of California Irvine machine learning repository. This dataset contains information on life expectancy in lung cancer patients after surgery.
+
+The underlying thoracic surgery data is in ARFF format. This is a text-based format with information on each of the attributes. You can load this data using a package such as foreign or by cutting and pasting the data section into a CSV file.
+
+
+```{r echo=TRUE, include=TRUE}
+## Set the working directory to the root of your DSC 520 directory
+setwd("C:/git-bellevue/dsc520-fork")
+
+## Load the `foreign` library
+library(foreign)
+
+## Load the `data/ThoraricSurgery.arff` to
+thoracic_surgery_df <- read.arff('data/ThoraricSurgery.arff')
+head(thoracic_surgery_df)
+  
+```
+Attribute Information:
+
+1. DGN: Diagnosis - specific combination of ICD-10 codes for primary and secondary as well multiple tumours if any (DGN3,DGN2,DGN4,DGN6,DGN5,DGN8,DGN1)
+2. PRE4: Forced vital capacity - FVC (numeric)
+3. PRE5: Volume that has been exhaled at the end of the first second of forced expiration - FEV1 (numeric)
+4. PRE6: Performance status - Zubrod scale (PRZ2,PRZ1,PRZ0)
+5. PRE7: Pain before surgery (T,F)
+6. PRE8: Haemoptysis before surgery (T,F)
+7. PRE9: Dyspnoea before surgery (T,F)
+8. PRE10: Cough before surgery (T,F)
+9. PRE11: Weakness before surgery (T,F)
+10. PRE14: T in clinical TNM - size of the original tumour, from OC11 (smallest) to OC14 (largest) (OC11,OC14,OC12,OC13)
+11. PRE17: Type 2 DM - diabetes mellitus (T,F)
+12. PRE19: MI up to 6 months (T,F)
+13. PRE25: PAD - peripheral arterial diseases (T,F)
+14. PRE30: Smoking (T,F)
+15. PRE32: Asthma (T,F)
+16. AGE: Age at surgery (numeric)
+17. Risk1Y: 1 year survival period - (T)rue value if died (T,F)
+
+
+## a. Fit a binary logistic regression model to the data set that predicts whether or not the patient survived for one year (the Risk1Y variable) after the surgery. Use the glm() function to perform the logistic regression. See Generalized Linear Models for an example. Include a summary using the summary() function in your results.
+
+```{r echo=TRUE, include=TRUE}
+
+# Since Risk1Y = True means patient died and we want to predict whether patient survived.
+# We should set baseline category as True, (which means Not Survived)
+# otherwise default will be taken as False due to alphabetical order
+# This means T = 0 and F = 1
+thoracic_surgery_df$Risk1Yr<-relevel(thoracic_surgery_df$Risk1Yr, "T")
+
+# Could also split this df using split function to training set and test set.
+# However leaving it for this exercise, assuming all dataset is training dataset.
+
+# This model includes all other parameters as dependent
+lrmodel.1 <- glm(Risk1Yr ~ . , family ='binomial' , data = thoracic_surgery_df)
+summary(lrmodel.1)
+
+# Trying out another model 
+# This model includes only DGN parameters as dependent
+lrmodel.2 <- glm(Risk1Yr ~ DGN , family ='binomial' , data = thoracic_surgery_df)
+
+summary(lrmodel.2)
+
+```
+
+## b. According to the summary, which variables had the greatest effect on the survival rate?
+
+Based on the summary, below values have significant effect, as mentioned in order of significance.
+So the variables which have greatest effect are in their order of effect
+
+1. PRE9
+
+2. PRE14
+
+3. PRE30
+
+4. PRE17
+
+5. PRE5
+
+
+
+Details from Summary Above:
+
+PRE9T       -1.368e+00  4.868e-01  -2.811  0.00494 **
+
+PRE14OC14   -1.653e+00  6.094e-01  -2.713  0.00668 **
+
+PRE30T      -1.084e+00  4.990e-01  -2.172  0.02984 * 
+
+PRE17T      -9.266e-01  4.445e-01  -2.085  0.03709 * 
+
+PRE14OC13   -1.179e+00  6.165e-01  -1.913  0.05580 . 
+
+PRE5         3.030e-02  1.786e-02   1.697  0.08971 .
+
+
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+## c. To compute the accuracy of your model, use the dataset to predict the outcome variable. The percent of correct predictions is the accuracy of your model. What is the accuracy of your model?
+
+
+```{r echo=TRUE, include=TRUE}
+
+result <- predict(lrmodel.1,thoracic_surgery_df,type = "response")
+# result
+# validating - putting the actual value and counts of Predicted values in a matrix
+# Since T = 0 and F = 1, so if result < 0.5, it should be T
+confmatrix <- table(ActualValue=thoracic_surgery_df$Risk1Yr, PredictedValue = result < 0.5)
+confmatrix
+# accuracy - Cases where we predicted correctly by Total Predictions
+# from matrix, we see when Actual Value is T, confmatrix needs to pick 1,2
+# and when F it should pick 2,1
+(confmatrix[1,2]+confmatrix[2,1])/sum(confmatrix)
+
+```
+So this model shows an accuracy of 83.62% approximately
+Further if we look the matrix, we see that this model is better predicting a F i.e. if a person lives or survives rather than predicting whether the person would die within the year.

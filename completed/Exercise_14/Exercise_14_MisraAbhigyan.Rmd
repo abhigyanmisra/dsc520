@@ -1,0 +1,138 @@
+---
+title: "Exercise 13"
+author: "Abhigyan Misra"
+date: October 21st 2020
+output: 
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Fit a logistic regression model to the binary-classifier-data.csv dataset from the previous assignment.
+
+Problem Statement : 
+Fit a logistic regression model to the binary-classifier-data.csv dataset from the previous assignment.
+
+a. What is the accuracy of the logistic regression classifier?
+
+b. How does the accuracy of the logistic regression classifier compare to the nearest neighbors algorithm?
+
+c. Why is the accuracy of the logistic regression classifier different from that of the nearest neighbors?
+
+
+```{r echo=TRUE, include=TRUE}
+## Set the working directory to the root of your DSC 520 directory
+setwd("C:/git-bellevue/dsc520-fork")
+
+## Load the `caTools` library
+library(caTools)
+#library(MASS)
+
+## Load the `data/binary-classifier-data.csv` to
+binary_classifier_df <- read.csv("data/binary-classifier-data.csv")
+head(binary_classifier_df)
+summary(binary_classifier_df)
+  
+```
+
+## Fit a logistic regression model to the binary-classifier-data.csv dataset from the previous assignment.
+
+```{r echo=TRUE, include=TRUE}
+
+# Since label is number converting to factors, so that it becomes categorical
+binary_classifier_df$label <- as.factor(binary_classifier_df$label)
+
+# Splitting the dataset for the model into train and test datasets.
+myData <- sample.split(binary_classifier_df$label, SplitRatio=0.8)
+
+
+train <- subset(binary_classifier_df, myData==TRUE)
+test <- subset(binary_classifier_df, myData==FALSE)
+
+
+
+# This model includes all other parameters as dependent
+# Using train dataset to generate the model
+lrmodel.1 <- glm(label ~ . , family ='binomial' , data = train)
+summary(lrmodel.1)
+
+```
+
+## a. What is the accuracy of the logistic regression classifier?
+
+```{r echo=TRUE, include=TRUE}
+# Using test dataset to see if the model is good
+result <- predict(lrmodel.1,test,type = "response")
+
+# result
+# validating - putting the actual value and counts of Predicted values in a matrix
+# Setting to T if result > 0.5
+confmatrix <- table(ActualValue=test$label, PredictedValue = result > 0.5)
+confmatrix
+# accuracy - Cases where we predicted correctly by Total Predictions
+# from matrix, we see when Actual Value is T, confmatrix needs to pick 1,2
+# and when F it should pick 2,1
+(confmatrix[1,1]+confmatrix[2,2])/sum(confmatrix)
+
+```
+So this model shows an accuracy which varies around 55% approx as I generate the model again and again.
+
+# b. How does the accuracy of the logistic regression classifier compare to the nearest neighbors algorithm?
+
+```{r echo=TRUE, include=TRUE}
+library(class)
+
+# Generating knn model with k=1
+knnmodel.1 <- knn(train[2:3],test[2:3],k=1,cl=train$label)
+summary(knnmodel.1)
+
+##create confusion matrix
+tab <- table(knnmodel.1,test$label)
+ 
+##this function divides the correct predictions by total number of predictions that tell us how accurate the model is.
+accuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
+accuracy(tab)
+
+# Running for multiple K Values
+for(i in 1:20){
+  ##print(paste("Model with K=", i))
+  knnmodel.i <- knn(train[2:3],test[2:3],k=i,cl=train$label)
+  table.i <- table(knnmodel.i,test$label)
+  print(paste("Accuracy for Model with K=", i ," is ", accuracy(table.i)))
+}
+
+
+
+
+```
+
+# c. Why is the accuracy of the logistic regression classifier different from that of the nearest neighbors?
+```{r echo=TRUE, include=TRUE}
+
+# creating df for plotting the comparison against actuals
+df <- binary_classifier_df
+df$predict <- predict(lrmodel.1, df,type = "response")
+
+# Adding details to test df for plotting
+test$knnpredict <- knn(train[2:3],test[2:3],k=1,cl=train$label)
+
+library(ggplot2)
+ggplot(data = binary_classifier_df, aes(y = y, x = x, color = label)) + 
+  geom_point() + ggtitle("Actual Data")
+
+ggplot(data = df, aes(y = y, x = x, color = predict>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression")
+
+ggplot(data = test, aes(y = y, x = x, color = knnpredict == label)) + 
+  geom_point() + ggtitle("Prediction-KNN-K=1")
+
+
+```
+If we look at the Actual Data, its hard to divide the data with a line into two separate sections with one section having 0 and other having 1, So the Logistic Regression Model is not a good fit.
+If we look at "Prediction-KNN-K=1" plot, it seems to make more sense as the values are plotted better.
+
+# References
+https://towardsdatascience.com/k-nearest-neighbors-algorithm-with-examples-in-r-simply-explained-knn-1f2c88da405c
