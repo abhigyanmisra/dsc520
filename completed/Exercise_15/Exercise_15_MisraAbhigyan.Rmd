@@ -1,0 +1,200 @@
+---
+title: "Exercise 15"
+author: "Abhigyan Misra"
+date: October 27th 2020
+output: 
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Exercise 15: Introduction to Machine Learning
+Problem Statement : 
+These assignments are here to provide you with an introduction to the “Data Science” use for these tools. This is your future. It may seem confusing and weird right now but it hopefully seems far less so than earlier in the semester. Attempt these homework assignments. You will not be graded on your answer but on your approach. This should be a, “Where am I on learning this stuff” check. If you can’t get it done, please explain why.
+
+Include all of your answers in a R Markdown report. 
+
+Regression algorithms are used to predict numeric quantity while classification algorithms predict categorical outcomes. A spam filter is an example use case for a classification algorithm. The input dataset is emails labeled as either spam (i.e. junk emails) or ham (i.e. good emails). The classification algorithm uses features extracted from the emails to learn which emails fall into which category.
+
+In this problem, you will use the nearest neighbors algorithm to fit a model on two simplified datasets. The first dataset (found in binary-classifier-data.csv) contains three variables; label, x, and y. The label variable is either 0 or 1 and is the output we want to predict using the x and y variables. The second dataset (found in trinary-classifier-data.csv) is similar to the first dataset except that the label variable can be 0, 1, or 2.
+
+Note that in real-world datasets, your labels are usually not numbers, but text-based descriptions of the categories (e.g. spam or ham). In practice, you will encode categorical variables into numeric values.
+
+# Solution
+```{r echo=TRUE, include=TRUE}
+## Set the working directory to the root of your DSC 520 directory
+setwd("C:/git-bellevue/dsc520-fork")
+
+## Load the `caTools` library
+library(caTools)
+
+## Load the `data/binary-classifier-data.csv` as df
+binary_classifier_df <- read.csv("data/binary-classifier-data.csv")
+head(binary_classifier_df)
+summary(binary_classifier_df)
+
+## Load the `data/trinary-classifier-data.csv` as df
+trinary_classifier_df <- read.csv("data/trinary-classifier-data.csv")
+head(binary_classifier_df)
+summary(binary_classifier_df)
+  
+```
+
+## a. Plot the data from each dataset using a scatter plot.
+
+### Making Labels as Factor, since they are numbers
+
+```{r echo=TRUE, include=TRUE}
+
+# Since label is number converting to factors, so that it becomes categorical
+binary_classifier_df$label <- as.factor(binary_classifier_df$label)
+trinary_classifier_df$label <- as.factor(trinary_classifier_df$label)
+
+
+```
+
+### Plotting
+
+```{r echo=TRUE, include=TRUE}
+
+library(ggplot2)
+ggplot(data = binary_classifier_df, aes(y = y, x = x, color = label)) + 
+  geom_point() + ggtitle("Actual Data - Binary Classifier")
+
+ggplot(data = trinary_classifier_df, aes(y = y, x = x, color = label)) + 
+  geom_point() + ggtitle("Actual Data - Trinary Classifier")
+
+```
+
+# b. The k nearest neighbors algorithm categorizes an input value by looking at the labels for the k nearest points and assigning a category based on the most common label. In this problem, you will determine which points are nearest by calculating the Euclidean distance between two points. As a refresher, the Euclidean distance between two points:p1=(x1, y1) and p2=(x2,y2) is d
+
+Fitting a model is when you use the input data to create a predictive model. There are various metrics you can use to determine how well your model fits the data. You will learn more about these metrics in later lessons. For this problem, you will focus on a single metric; accuracy. Accuracy is simply the percentage of how often the model predicts the correct result. If the model always predicts the correct result, it is 100% accurate. If the model always predicts the incorrect result, it is 0% accurate.
+
+Fit a k nearest neighbors model for each dataset for k=3, k=5, k=10, k=15, k=20, and k=25. Compute the accuracy of the resulting models for each value of k. Plot the results in a graph where the x-axis is the different values of k and the y-axis is the accuracy of the model.
+
+## Splitting the Data into Train and Test dataframes
+```{r echo=TRUE, include=TRUE}
+
+# Splitting the dataset for the model into train and test datasets.
+myData_binary <- sample.split(binary_classifier_df$label, SplitRatio=0.8)
+train_binary <- subset(binary_classifier_df, myData_binary==TRUE)
+test_binary <- subset(binary_classifier_df, myData_binary==FALSE)
+
+myData_trinary <- sample.split(trinary_classifier_df$label, SplitRatio=0.8)
+train_trinary <- subset(trinary_classifier_df, myData_trinary==TRUE)
+test_trinary <- subset(trinary_classifier_df, myData_trinary==FALSE)
+
+
+```
+
+## Accuracy function
+```{r echo=TRUE, include=TRUE}
+
+# this function divides the correct predictions by total number of predictions that tell 
+# us how accurate the model is.
+accuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
+#accuracy(tab)
+
+```
+
+## Fitting K nearest Model for Binary Classifier
+Generating KNN Models for Binary Classifier Data and Displaying their accuracy from K=1 to K=25
+```{r echo=TRUE, include=TRUE}
+library(class)
+
+K_Binary_Values <- c()
+Accuracy_Binary <- c()
+error.rate.b <- c()
+
+# Running for multiple K Values
+for(i in 1:25){
+  knnmodel.b.i <- knn(train_binary[2:3],test_binary[2:3],k=i,cl=train_binary$label)
+  table.b.i <- table(knnmodel.b.i,test_binary$label)
+  accur = accuracy(table.b.i)
+  print(paste("Accuracy for Binary Classifier Data Model with K=", i ," is ", accuracy(table.b.i)))
+  K_Binary_Values <- c(K_Binary_Values, i)
+  Accuracy_Binary<- c(Accuracy_Binary, accur)
+  error.rate.b <- c(error.rate.b, mean(test_binary$label != knnmodel.b.i))
+}
+print(K_Binary_Values)
+print(Accuracy_Binary)
+print(error.rate.b*100)
+print(Accuracy_Binary+error.rate.b*100)
+
+accuracy_binary_df <- data.frame(K_Binary_Values, Accuracy_Binary, error.rate.b*100)
+accuracy_binary_df
+
+```
+
+
+## Fitting K nearest Model for Trinary Classifier
+Generating KNN Models for Trinary Classifier Data and Displaying their accuracy from K=1 to K=25
+```{r echo=TRUE, include=TRUE}
+K_Trinary_Values <- c()
+Accuracy_Trinary <- c()
+error.rate.t <- c()
+
+# Running for multiple K Values
+for(i in 1:25){
+  knnmodel.t.i <- knn(train_trinary[2:3],test_trinary[2:3],k=i,cl=train_trinary$label)
+  table.t.i <- table(knnmodel.t.i,test_trinary$label)
+  accur = accuracy(table.t.i)
+  print(paste("Accuracy for Trinary Classifier Data Model with K=", i ," is ", accur))
+  K_Trinary_Values <- c(K_Trinary_Values, i)
+  Accuracy_Trinary<- c(Accuracy_Trinary, accur)
+  error.rate.t <- c(error.rate.t, mean(test_trinary$label != knnmodel.t.i))
+}
+
+print(K_Trinary_Values)
+print(Accuracy_Trinary)
+print(error.rate.t*100)
+print(Accuracy_Trinary+error.rate.t*100)
+
+
+accuracy_trinary_df <- data.frame(K_Trinary_Values, Accuracy_Trinary, error.rate.t*100)
+accuracy_trinary_df
+
+
+```
+## Plotting the K Values vs Accuracy
+
+```{r echo=TRUE, include=TRUE}
+
+library(ggplot2)
+ggplot(data = accuracy_binary_df, aes(y = Accuracy_Binary, x = K_Binary_Values)) + 
+  geom_line() + ggtitle("Accuracy vs K Value - Binary Classifier") +
+  ylab("Accuracy %") + xlab("K")
+
+# Inverted Plot of Above
+ggplot(data = accuracy_binary_df, aes(y = error.rate.b, x = K_Binary_Values)) + 
+  geom_line() + ggtitle("Error Rate vs K Value - Binary Classifier") +
+  ylab("Error Rate %") + xlab("K")
+
+ggplot(data = accuracy_trinary_df, aes(y = Accuracy_Trinary, x = K_Trinary_Values)) + 
+  geom_line() + ggtitle("Accuracy vs K Value - Trinary Classifier") +
+  ylab("Accuracy %") + xlab("K")
+
+# Inverted Plot of Above
+ggplot(data = accuracy_trinary_df, aes(y = error.rate.t, x = K_Trinary_Values)) + 
+  geom_line() + ggtitle("Error Rate vs K Value - Trinary Classifier") +
+  ylab("Error Rate %") + xlab("K")
+
+
+```
+
+
+
+# c. In later lessons, you will learn about linear classifiers. These algorithms work by defining a decision boundary that separates the different categories. Looking back at the plots of the data, do you think a linear classifier would work well on these datasets?
+
+If we look at the Actual Data, its hard to divide the data(colored dots) with a line / linear classifier as the data is spread in different clusters. It is not possible to put the different binary values in opposite direction of this line, So linear classifier will not work with this kind of dataset.
+
+
+# References
+https://towardsdatascience.com/k-nearest-neighbors-algorithm-with-examples-in-r-simply-explained-knn-1f2c88da405c
+https://blogs.oracle.com/datascience/introduction-to-k-means-clustering
+https://kevinzakka.github.io/2016/07/13/k-nearest-neighbor/
+https://www.datacamp.com/community/tutorials/k-means-clustering-r
+
