@@ -1,0 +1,545 @@
+---
+title: "Predicting the Risk parameters for Cardiovascular patients"
+author: "Abhigyan Misra"
+date: November 15th 2020
+output: 
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+# Introduction
+<b>Problem Statement :</b> 
+Cardiovascular Disease often used interchangeably with “heart disease”, generally refers to conditions that involve narrowed or blocked blood vessels that can lead to a heart attack, chest pain (angina) or stroke. Other heart conditions, such as those that affect your heart's muscle, valves, or rhythm, also are considered forms of heart disease.
+The purpose of this project is to predict the effects of different parameters recorded in the data to predict mortality of the patient. By predicting so the physicians can determine high risk patients and can take better care of them thus helping them survive.
+
+# Reading the Data File
+```{r echo=TRUE, include=TRUE}
+
+# Load the `caTools` library
+library(caTools)
+
+# Load the `heart_failure_clinical_records_dataset.csv` as df
+clinical_df <- read.csv("heart_failure_clinical_records_dataset.csv")
+
+# Converting few attributes as factors
+clinical_df$anaemia <- as.factor(clinical_df$anaemia)
+clinical_df$diabetes <- as.factor(clinical_df$diabetes)
+clinical_df$high_blood_pressure <- as.factor(clinical_df$high_blood_pressure)
+clinical_df$sex <- as.factor(clinical_df$sex)
+clinical_df$smoking <- as.factor(clinical_df$smoking)
+clinical_df$DEATH_EVENT <- as.factor(clinical_df$DEATH_EVENT)
+head(clinical_df)
+
+summary(clinical_df)
+
+str(clinical_df)
+
+  
+```
+
+# Data Definitions
+
+
+<table border="1" >
+<tr>
+<th align='left'>Attribute Name</th><th>Description of Attribute</th><th>Scale/Measurement</th><th>Range Of Values
+</th></tr>
+<tr>
+<td>Age</td><td>Age of the patient</td><td>Years</td><td>[40,..., 95]</td>
+</tr>
+<tr>
+<td>Anaemia</td><td>Decrease of red blood cells or hemoglobin</td><td>Boolean</td><td>0, 1</td>
+</tr>
+<tr>
+<td>High blood pressure</td><td>If a patient has hypertension</td><td>Boolean</td><td>0, 1</td>
+</tr>
+<tr>
+<td>Creatinine phosphokinase-(CPK)</td><td>Level of the CPK enzyme in the blood</td><td>mcg/L</td><td>[23,..., 7861]</td>
+</tr>
+<tr>
+<td>Diabetes</td><td>If the patient has diabetes</td><td>Boolean</td><td>0, 1</td>
+</tr>
+<tr>
+<td>Ejection fraction</td><td>	Percentage of blood leaving
+the heart at each contraction</td><td>	Percentage</td><td>	[14,..., 80]</td>
+</tr>
+<tr>
+<td>Sex</td><td>	Woman or man</td><td>	Binary</td><td>	0, 1</td>
+</tr>
+<tr>
+<td>Platelets</td><td>	Platelets in the blood	</td><td>kiloplatelets/mL</td><td>	[25.01,..., 850.00]</td>
+</tr>
+<tr>
+<td>Serum creatinine</td><td>	Level of creatinine in the blood</td><td>	mg/dL</td><td>	[0.50,..., 9.40]</td>
+</tr>
+<tr>
+<td>Serum sodium</td><td>	Level of sodium in the blood</td><td>	mEq/L</td><td>	[114,..., 148]</td>
+</tr>
+<tr>
+<td>Smoking</td><td>	If the patient smokes</td><td>	Boolean</td><td>	0, 1</td>
+</tr>
+<tr>
+<td>Time</td><td>	Follow-up period</td><td>	Days</td><td>	[4,...,285]</td>
+</tr>
+<tr>
+<td>(target) death event</td><td>	If the patient died during the follow-up period</td><td>	Boolean</td><td>	0, 1</td>
+</tr>
+</table>
+
+# Validation of the Data
+
+```{r echo=TRUE, include=TRUE}
+
+any(is.na(clinical_df))
+nrow(clinical_df)
+ncol(clinical_df)
+range(clinical_df$age)
+range(clinical_df$creatinine_phosphokinase)
+range(clinical_df$ejection_fraction)
+range(clinical_df$platelets)
+range(clinical_df$serum_creatinine)
+range(clinical_df$serum_sodium)
+
+```
+
+# Histogram Plots for the parameters being observed
+
+```{r echo=TRUE, include=TRUE}
+library(ggplot2)
+
+ggplot(clinical_df, aes(age, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  geom_histogram(alpha=0.5, binwidth = 5)+
+  #geom_density(alpha=.2, fill="#FF6666")+
+  xlab("Age in Years") +
+  ylab("Count of Patients") + 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(creatinine_phosphokinase, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  geom_histogram(alpha=0.5, binwidth = 250)+
+  #geom_density(alpha=.2, fill="#FF6666")+
+  xlab("Level of the CPK enzyme in the blood - mcg/L") +
+  ylab("Count of Patients")+ 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(ejection_fraction, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  geom_histogram(alpha=0.5, binwidth = 4)+
+  #geom_density(alpha=.2, fill="#FF6666")+
+  xlab("Ejection Fraction %age") +
+  ylab("Count of Patients")+ 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(platelets, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  geom_histogram(alpha=0.5)+
+  #geom_density(alpha=.2, fill="#FF6666")+
+  xlab("Platelets in the blood - kiloplatelets/mL") +
+  ylab("Count of Patients")+ 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(serum_creatinine, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  geom_histogram(alpha=0.5, bins = 40)+
+  #geom_density(alpha=.2, fill="#FF6666")+
+  xlab("Level of creatinine in the blood - mg/dL") +
+  ylab("Count of Patients")+ 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+
+ggplot(clinical_df, aes(serum_sodium, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  geom_histogram(alpha=0.5, bins = 40)+
+  #geom_density(alpha=.2, fill="#FF6666")+
+  xlab("Level of sodium in the blood - mEq/L") +
+  ylab("Count of Patients") + 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+
+```
+
+
+The histogram plots are for comparing the effect of the parameters in case of a Death Event or Survival.
+To further clearly see the impact it's better to have the density plots to see, if some parameters show more effect than the others.
+
+# Density Plots for the parameters being observed
+
+```{r echo=TRUE, include=TRUE}
+
+ggplot(clinical_df, aes(age, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  #geom_histogram(aes(y=..density..), alpha=0.5, binwidth = 5)+
+  geom_density(alpha=.2)+
+  xlab("Age in Years") +
+  ylab("Density") + 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(creatinine_phosphokinase, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  #geom_histogram(aes(y=..density..), alpha=0.5, binwidth = 250)+
+  geom_density(alpha=.2)+
+  xlab("Level of the CPK enzyme in the blood - mcg/L") +
+  ylab("Density") + 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(ejection_fraction, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  #geom_histogram(aes(y=..density..), alpha=0.5, binwidth = 4)+
+  geom_density(alpha=.2)+
+  xlab("Ejection Fraction %age") +
+  ylab("Density") + 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(platelets, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  #geom_histogram(aes(y=..density..), alpha=0.5)+
+  geom_density(alpha=.2)+
+  xlab("Platelets in the blood - kiloplatelets/mL") +
+  ylab("Density") + 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(serum_creatinine, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  #geom_histogram(aes(y=..density..), alpha=0.5, bins = 40)+
+  geom_density(alpha=.2)+
+  xlab("Level of creatinine in the blood - mg/dL") +
+  ylab("Density") + 
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+ggplot(clinical_df, aes(serum_sodium, color=DEATH_EVENT, fill=DEATH_EVENT)) +
+  #geom_histogram(aes(y=..density..), alpha=0.5, bins = 40)+
+  geom_density(alpha=.2) +
+  xlab("Level of sodium in the blood - mEq/L") +
+  ylab("Density") +
+  scale_color_brewer(palette="Accent") + 
+  theme_minimal()+theme(legend.position="top")
+
+```
+
+Based on the Density Plot, following is the analysis
+
+1.    Age seems to have some effect on Mortality. Older the patient, higher the risk
+
+2.    Effect of Level of CPK Enzyme is difficult to observe from the plot
+
+3.    Lesser the Ejection Fraction, risk seems to increase
+
+4.    Effect of Platelet count is difficult to observe from the plot
+
+5.    Level of Creatinine seems to have effect. Risk increases with its increase
+
+6.    Level of Sodium seems to have effect. Risk increases with its decrease
+
+
+# Checking Significance of the parameters from the whole dataset.
+
+Before proceeding with model generation, want to see what attributes are more significant for the purpose of modeling.
+Based on the same, we can see below parameters in order of their significance.
+1. time - this is time between follow up visits
+2. ejection_fraction
+3. serum_creatinine
+4. age
+5. serum_sodium
+
+```{r echo=TRUE, include=TRUE}
+
+lrmodel.base <- glm(DEATH_EVENT ~ . , family ='binomial' , data = clinical_df)
+summary(lrmodel.base)
+
+```
+# Splitting the data into train and test datasets
+
+```{r echo=TRUE, include=TRUE}
+# Splitting the dataset for the model into train and test datasets.
+set.seed(100)
+myData <- sample.split(clinical_df$DEATH_EVENT, SplitRatio=0.8)
+
+train <- subset(clinical_df, myData==TRUE)
+test <- subset(clinical_df, myData==FALSE)
+
+```
+
+# Logistic Regression Model - Since Outcome is Binary
+
+## Model 1
+This model is based on all the attributes.
+```{r echo=TRUE, include=TRUE}
+# This model includes all other parameters as dependent
+lrmodel.1 <- glm(DEATH_EVENT ~ . , family ='binomial' , data = train)
+summary(lrmodel.1)
+```
+
+## Model 2
+This model is based on all significant parameters except time between follow ups.
+Want to remove time between follow ups as its not a vital reading from person's blood work.
+```{r echo=TRUE, include=TRUE}
+# Trying out another model 
+# This model includes only parameters which showed the effect in density plot
+lrmodel.2 <- glm(DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium  , family ='binomial' , data = train)
+
+summary(lrmodel.2)
+```
+## Model 3
+Generating another model with all significant parameters along with time between follow ups.
+```{r echo=TRUE, include=TRUE}
+# Trying out another model 
+# This model includes only parameters which showed the effect in density plot + time, as it shows significance. time is the time in days between follow up visits.
+lrmodel.3 <- glm(DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + time  , family ='binomial' , data = train)
+
+summary(lrmodel.3)
+
+```
+## Model 4
+This is the model using only the parameters which showed significance in the density curves that we plotted earlier
+```{r echo=TRUE, include=TRUE}
+# Trying out another model 
+# This model includes only parameters which showed the effect in density plot + time, as it shows significance. time is the time in days between follow up visits.
+lrmodel.4 <- glm(DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium, family ='binomial' , data = train)
+
+summary(lrmodel.4)
+
+```
+# Plot the Models
+## Model 1
+```{r echo=TRUE, include=TRUE}
+plot(lrmodel.1)
+
+```
+## Model 2
+```{r}
+plot(lrmodel.2)
+
+```
+
+## Model 3
+```{r}
+
+plot(lrmodel.3)
+
+```
+
+## Model 4
+```{r}
+plot(lrmodel.4)
+```
+
+
+
+## Comparing the Models
+
+```{r echo=TRUE, include=TRUE}
+anova(lrmodel.1, lrmodel.2, lrmodel.3, lrmodel.4, test = "Chisq")
+```
+Based on the comparison, Model 3 seems to be better than Model 1, Model 2 & Model 4.
+Also if you look at the QQ plot of the models, Model 3 is better aligned, though it does seem to have outliers as shown in the plot.
+
+## Testing Model 3 for Multicollinearity
+```{r echo=TRUE, include=TRUE}
+library(car)
+
+vif(lrmodel.3)
+
+print("Tolerance = 1/VIF")
+1/vif(lrmodel.3)
+
+print("Mean VIF")
+mean(vif(lrmodel.3))
+
+```
+
+Is Largest VIF > 10 ? NO - So no cause for concern
+Avg VIF is 1.091277, which is not substantially greater than 1. (Substantially more is considered more than 2.5, as from https://statisticalhorizons.com/multicollinearity)
+All Tolerance are above 0.2, meaning it should be fine.(Less than 0.2 is potential problem, less than 0.1 is significant problem. Its same as VIF >10, as tolerance = 1/VIF)
+
+# Checking Accuracy of Models
+
+## Model 1
+
+```{r echo=TRUE, include=TRUE}
+# Using test dataset to see if the model is good
+result <- predict(lrmodel.1,test,type = "response")
+# result
+# validating - putting the actual value and counts of Predicted values in a matrix
+# Setting to T if result > 0.5
+confmatrix <- table(ActualValue=test$DEATH_EVENT, PredictedValue = result > 0.5)
+confmatrix
+# accuracy - Cases where we predicted correctly by Total Predictions
+(confmatrix[1,1]+confmatrix[2,2])/sum(confmatrix)
+
+```
+
+## Model 2
+
+```{r echo=TRUE, include=TRUE}
+# Using test dataset to see if the model is good
+# Using test dataset to see if the model is good
+result <- predict(lrmodel.2,test,type = "response")
+# result
+# validating - putting the actual value and counts of Predicted values in a matrix
+# Setting to T if result > 0.5
+confmatrix <- table(ActualValue=test$DEATH_EVENT, PredictedValue = result > 0.5)
+confmatrix
+# accuracy - Cases where we predicted correctly by Total Predictions
+(confmatrix[1,1]+confmatrix[2,2])/sum(confmatrix)
+
+
+```
+
+## Model 3
+
+```{r echo=TRUE, include=TRUE}
+# Using test dataset to see if the model is good
+result <- predict(lrmodel.3,test,type = "response")
+# result
+# validating - putting the actual value and counts of Predicted values in a matrix
+# Setting to T if result > 0.5
+confmatrix <- table(ActualValue=test$DEATH_EVENT, PredictedValue = result > 0.5)
+confmatrix
+# accuracy - Cases where we predicted correctly by Total Predictions
+(confmatrix[1,1]+confmatrix[2,2])/sum(confmatrix)
+```
+## Model 4
+
+```{r echo=TRUE, include=TRUE}
+# Using test dataset to see if the model is good
+result <- predict(lrmodel.4,test,type = "response")
+# result
+# validating - putting the actual value and counts of Predicted values in a matrix
+# Setting to T if result > 0.5
+confmatrix <- table(ActualValue=test$DEATH_EVENT, PredictedValue = result > 0.5)
+confmatrix
+# accuracy - Cases where we predicted correctly by Total Predictions
+(confmatrix[1,1]+confmatrix[2,2])/sum(confmatrix)
+```
+
+Model 2(76.7%) and Model 3(76.7%) seem to have better accuracy than Model 1(73.3%) & Model 4(71.7%).
+
+## KNN MODEL
+
+Generating a KNN Model and also checking accuracy to determine, if KNN Model Could be used.
+
+```{r echo=TRUE, include=TRUE}
+library(class)
+
+##this function divides the correct predictions by total number of predictions that tell us how accurate the model is.
+accuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
+
+# Running for multiple K Values
+for(i in 1:100){
+  ##print(paste("Model with K=", i))
+  knnmodel.i <- knn(train[1:12],test[1:12],k=i,cl=train$DEATH_EVENT)
+  table.i <- table(knnmodel.i,test$DEATH_EVENT)
+  print(paste("Accuracy for Model with K=", i ," is ", accuracy(table.i)))
+}
+
+```
+The max accuracy reached is 70% for K=6,7,8.
+This is lesser than the accuracy of our models.
+So Logistic Regression Model is a better choice.
+
+# Focusing on some specific parameters for Scatter Plots
+
+1. ejection_fraction
+2. serum_creatinine
+3. serum_sodium
+
+##  ejection_fraction, serum_creatinine & Outcome - Death Event
+```{r echo=TRUE, include=TRUE}
+df <- clinical_df
+df$predict.1 <- predict(lrmodel.1, df,type = "response")
+df$predict.2 <- predict(lrmodel.2, df,type = "response")
+df$predict.3 <- predict(lrmodel.3, df,type = "response")
+
+ggplot(data = clinical_df, aes(y = serum_creatinine, x = ejection_fraction , color = DEATH_EVENT)) + 
+  geom_point() + ggtitle("Actual Data")
+
+ggplot(data = df, aes(y = serum_creatinine, x = ejection_fraction, color = predict.1>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-1")
+
+ggplot(data = df, aes(y = serum_creatinine, x = ejection_fraction, color = predict.2>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-2")
+
+ggplot(data = df, aes(y = serum_creatinine, x = ejection_fraction, color = predict.3>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-3")
+
+
+```
+
+```{r echo=TRUE, include=TRUE}
+
+df <- clinical_df
+df$predict.1 <- predict(lrmodel.1, df,type = "response")
+df$predict.2 <- predict(lrmodel.2, df,type = "response")
+df$predict.3 <- predict(lrmodel.3, df,type = "response")
+
+ggplot(data = clinical_df, aes(y = serum_sodium, x = ejection_fraction , color = DEATH_EVENT)) + 
+  geom_point() + ggtitle("Actual Data")
+
+ggplot(data = df, aes(y = serum_sodium, x = ejection_fraction, color = predict.1>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-1")
+
+ggplot(data = df, aes(y = serum_sodium, x = ejection_fraction, color = predict.2>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-2")
+
+ggplot(data = df, aes(y = serum_sodium, x = ejection_fraction, color = predict.3>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-3")
+
+```
+
+
+```{r echo=TRUE, include=TRUE}
+df <- clinical_df
+df$predict.1 <- predict(lrmodel.1, df,type = "response")
+df$predict.2 <- predict(lrmodel.2, df,type = "response")
+df$predict.3 <- predict(lrmodel.3, df,type = "response")
+
+ggplot(data = clinical_df, aes(y = serum_sodium, x = serum_creatinine , color = DEATH_EVENT)) + 
+  geom_point() + ggtitle("Actual Data")
+
+ggplot(data = df, aes(y = serum_sodium, x = serum_creatinine, color = predict.1>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-1")
+
+ggplot(data = df, aes(y = serum_sodium, x = serum_creatinine, color = predict.2>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-2")
+
+ggplot(data = df, aes(y = serum_sodium, x = serum_creatinine, color = predict.3>0.5)) + 
+  geom_point() + ggtitle("Prediction-Logistic Regression-Model-3")
+```
+
+# Summary
+We do see some relation between some parameters/variables on the mortality.
+The most important one's are
+
+1.    Ejection Fraction - If the % age is lesser, Risk increases.
+
+2.    Creatinine Level - Wit increase in level, Risk increases.
+
+3.    Sodium Level - With decrease in level, Risk increases.
+
+4.    Age - Older the patient, higher the risk
+
+Another factor which I did not plan earlier was 
+
+1.    Time in days between follow up visits.
+
+The other factors which I observed, did not show much effect.
+
+We were able to generate a prediction model(a logistic regression model), which is shown as "lrmodel.3" in the analysis.
+
+There were some concerns regarding the sample size of the data. Since the data was from a single location, there might be some other factors in play which can be due to habits of people to that specific region or part of the world and may not be reflecting in the data. If we get more geographically separated data, we might come up with better model. This model may be more effective in the region where data comes from.
+
+# References
+
+http://www.sthda.com/english/wiki/ggplot2-histogram-plot-quick-start-guide-r-software-and-data-visualization
+https://towardsdatascience.com/k-nearest-neighbors-algorithm-with-examples-in-r-simply-explained-knn-1f2c88da405c
+https://kevinzakka.github.io/2016/07/13/k-nearest-neighbor/
+https://www.datacamp.com/community/tutorials/k-means-clustering-r
+Discovering Statistics Using R, Andy Field | Jeremy Miles | Zoe Field
+R For Everyone, Jared P Lander
+
+
